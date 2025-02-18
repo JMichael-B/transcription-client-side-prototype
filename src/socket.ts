@@ -8,7 +8,7 @@ export const socket = io("http://localhost:9000", {
 
 // FLASK SOCKETIO (SERVER)
 // export const socket = io("wss://lexcode-ph.ddns.net", {
-//     path: "/transcription-channel-1/socket.io/",
+//     path: "/qurious-engagement/socket.io/",
 //     transports: ["websocket"],
 // });
 
