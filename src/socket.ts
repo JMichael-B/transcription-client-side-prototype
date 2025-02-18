@@ -12,6 +12,11 @@ export const socket = io("http://localhost:9000", {
 //     transports: ["websocket"],
 // });
 
+// Joining Session
+export const joinSession = (sessionId: string) => {
+    socket.emit("join_session", { session_id: sessionId });
+};
+
 //FastAPI SOCKETIO
 // export const socket = io("http://localhost:9000", {
 //     path: "/socket.io/",
