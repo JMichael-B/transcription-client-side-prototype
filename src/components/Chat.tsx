@@ -1,10 +1,21 @@
 import { useEffect, useState } from "react";
 import { socket, joinSession } from "../socket";
 
+interface Message {
+  session_id: string;
+  user: string;
+  text: string;
+  timestamp: string;
+}
+
+interface Emoji {
+  emoji: string;
+}
+
 export default function LiveChat() {
-  const [messages, setMessages] = useState<{ user: string; text: string }[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [message, setMessage] = useState("");
-  const [reactions, setReactions] = useState<{ emoji: string }[]>([]);
+  const [reactions, setReactions] = useState<Emoji[]>([]);
   const [sessionId, setSessionId] = useState("12345");  // Default session ID
   const [username, setUsername] = useState("User1");  // Default username
   const [sessions] = useState([
@@ -16,25 +27,40 @@ export default function LiveChat() {
   useEffect(() => {
     joinSession(sessionId);  // Join the session when the component mounts
 
-    socket.on("receive_message", (data) => {
+    socket.on("receive_message", (data: Message) => {
+      console.log("New message received:", data);
       setMessages((prev) => [...prev, data]);
     });
-
+  
+    socket.on("load_previous_messages", (previousMessages: Message[]) => {
+      console.log("Previous messages loaded:", previousMessages);
+      setMessages(previousMessages); // Replace messages with loaded history
+    });
+  
     socket.on("receive_reaction", (data) => {
       setReactions((prev) => [...prev, data]);
     });
-
+  
     socket.on("connect", () => console.log("Connected to WebSocket"));
-
+  
     return () => {
       socket.off("receive_message");
+      socket.off("load_previous_messages");
       socket.off("receive_reaction");
+      socket.off("connect");
     };
   }, [sessionId]); // Re-run effect when sessionId changes
 
   const sendMessage = () => {
     if (message.trim()) {
-      socket.emit("send_message", { session_id: sessionId, user: username, text: message });
+      const timestamp = new Date().toISOString();
+      const newMessage: Message = { 
+        session_id: sessionId,
+        user: username, 
+        text: message, 
+        timestamp : timestamp 
+      };
+      socket.emit("send_message", newMessage);
       setMessage("");
     }
   };
@@ -59,14 +85,7 @@ export default function LiveChat() {
           <button
             key={session.session_id}
             onClick={() => handleTabClick(session.session_id)}
-            style={{
-              padding: "10px 20px",
-              margin: "0 10px",
-              cursor: "pointer",
-              backgroundColor: session.session_id === sessionId ? "#ddd" : "#f1f1f1",
-              border: "1px solid #ccc",
-              borderRadius: "5px",
-            }}
+            style={{ padding: "10px 20px", margin: "0 10px", cursor: "pointer", backgroundColor: session.session_id === sessionId ? "#ddd" : "#f1f1f1", border: "1px solid #ccc", borderRadius: "5px",}}
           >
             {session.name}
           </button>
@@ -88,10 +107,13 @@ export default function LiveChat() {
       <h2>Live Chat (Session: {sessionId})</h2>
       <div>
         {messages.map((msg, idx) => (
-          <p key={idx}>
-            <strong>{msg.user}:</strong> {msg.text}
-          </p>
-        ))}
+            <p key={idx}>
+              <strong>{msg.user}:</strong> {msg.text} 
+              <span style={{ fontSize: "0.8rem", color: "gray", marginLeft: "10px" }}>
+                {new Date(msg.timestamp).toLocaleTimeString()}
+              </span>
+            </p>
+          ))}
       </div>
       <input value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type a message..." />
       <button onClick={sendMessage}>Send</button>
