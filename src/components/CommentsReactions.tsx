@@ -35,7 +35,7 @@ export default function LiveCommentsReactions() {
       setComments((prev) => [...prev, data]);
     });
   
-    socket.on("load_previous_messages", (previousMessages: Comment[]) => {
+    socket.on("load_previous_comments", (previousMessages: Comment[]) => {
       console.log("Previous comments loaded:", previousMessages);
       setComments(previousMessages); // Replace messages with loaded history
     });
@@ -48,7 +48,7 @@ export default function LiveCommentsReactions() {
   
     return () => {
       socket.off("recieved_comment");
-      socket.off("load_previous_messages");
+      socket.off("load_previous_comments");
       socket.off("receive_reaction");
       socket.off("connect");
     };
