@@ -1,67 +1,70 @@
 import { useEffect, useState } from "react";
 import { socket, joinSession } from "../socket";
 
-interface Message {
+interface Comment {
   session_id: string;
   user: string;
   text: string;
   timestamp: string;
 }
 
-interface Emoji {
+interface Reaction {
   emoji: string;
 }
 
-export default function LiveChat() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [message, setMessage] = useState("");
-  const [reactions, setReactions] = useState<Emoji[]>([]);
-  const [sessionId, setSessionId] = useState("12345");  // Default session ID
-  const [username, setUsername] = useState("User1");  // Default username
+export default function LiveCommentsReactions() {
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [comment, setComment] = useState("");
+
+  const [reactions, setReactions] = useState<Reaction[]>([]);
+
+  // Sample Sessions Only
   const [sessions] = useState([
     { session_id: "12345", name: "Session 12345" },
     { session_id: "67789", name: "Session 67789" },
     { session_id: "11111", name: "Session 11111" },
   ]);
+  const [username, setUsername] = useState("User1");  // Default username
+  const [sessionId, setSessionId] = useState("12345");  // Default session ID
 
   useEffect(() => {
     joinSession(sessionId);  // Join the session when the component mounts
 
-    socket.on("receive_message", (data: Message) => {
-      console.log("New message received:", data);
-      setMessages((prev) => [...prev, data]);
+    socket.on("recieved_comment", (data: Comment) => {
+      console.log("Comment received:", data);
+      setComments((prev) => [...prev, data]);
     });
   
-    socket.on("load_previous_messages", (previousMessages: Message[]) => {
-      console.log("Previous messages loaded:", previousMessages);
-      setMessages(previousMessages); // Replace messages with loaded history
+    socket.on("load_previous_messages", (previousMessages: Comment[]) => {
+      console.log("Previous comments loaded:", previousMessages);
+      setComments(previousMessages); // Replace messages with loaded history
     });
   
-    socket.on("receive_reaction", (data) => {
+    socket.on("receive_reaction", (data : Reaction) => {
       setReactions((prev) => [...prev, data]);
     });
   
     socket.on("connect", () => console.log("Connected to WebSocket"));
   
     return () => {
-      socket.off("receive_message");
+      socket.off("recieved_comment");
       socket.off("load_previous_messages");
       socket.off("receive_reaction");
       socket.off("connect");
     };
   }, [sessionId]); // Re-run effect when sessionId changes
 
-  const sendMessage = () => {
-    if (message.trim()) {
+  const sendComment = () => {
+    if (comment.trim()) {
       const timestamp = new Date().toISOString();
-      const newMessage: Message = { 
+      const newComment: Comment = { 
         session_id: sessionId,
         user: username, 
-        text: message, 
+        text: comment, 
         timestamp : timestamp 
       };
-      socket.emit("send_message", newMessage);
-      setMessage("");
+      socket.emit("send_message", newComment);
+      setComment("");
     }
   };
 
@@ -106,7 +109,7 @@ export default function LiveChat() {
       {/* Render the chat for the selected session */}
       <h2>Live Chat (Session: {sessionId})</h2>
       <div>
-        {messages.map((msg, idx) => (
+        {comments.map((msg, idx) => (
             <p key={idx}>
               <strong>{msg.user}:</strong> {msg.text} 
               <span style={{ fontSize: "0.8rem", color: "gray", marginLeft: "10px" }}>
@@ -115,8 +118,8 @@ export default function LiveChat() {
             </p>
           ))}
       </div>
-      <input value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type a message..." />
-      <button onClick={sendMessage}>Send</button>
+      <input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Type your comment..." />
+      <button onClick={sendComment}>Send</button>
 
       <h3>Reactions</h3>
       <div>
