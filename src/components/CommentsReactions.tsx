@@ -3,8 +3,8 @@ import { socket, joinSession } from "../socket";
 
 interface Comment {
   session_id: string;
-  user: string;
-  text: string;
+  username: string;
+  comment: string;
   timestamp: string;
 }
 
@@ -18,7 +18,7 @@ export default function LiveCommentsReactions() {
 
   const [reactions, setReactions] = useState<Reaction[]>([]);
 
-  // Sample Sessions Only
+  // Sample Sessions Only [Hardcoded]
   const [sessions] = useState([
     { session_id: "12345", name: "Session 12345" },
     { session_id: "67789", name: "Session 67789" },
@@ -59,11 +59,11 @@ export default function LiveCommentsReactions() {
       const timestamp = new Date().toISOString();
       const newComment: Comment = { 
         session_id: sessionId,
-        user: username, 
-        text: comment, 
+        username: username, 
+        comment: comment, 
         timestamp : timestamp 
       };
-      socket.emit("send_message", newComment);
+      socket.emit("send_comment", newComment);
       setComment("");
     }
   };
@@ -111,7 +111,7 @@ export default function LiveCommentsReactions() {
       <div>
         {comments.map((msg, idx) => (
             <p key={idx}>
-              <strong>{msg.user}:</strong> {msg.text} 
+              <strong>{msg.username}:</strong> {msg.comment} 
               <span style={{ fontSize: "0.8rem", color: "gray", marginLeft: "10px" }}>
                 {new Date(msg.timestamp).toLocaleTimeString()}
               </span>
