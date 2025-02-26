@@ -35,9 +35,9 @@ export default function LiveCommentsReactions() {
       setComments((prev) => [...prev, data]);
     });
   
-    socket.on("load_previous_comments", (previousMessages: Comment[]) => {
-      console.log("Previous comments loaded:", previousMessages);
-      setComments(previousMessages); // Replace messages with loaded history
+    socket.on("load_previous_comments", (previousComments: Comment[]) => {
+      console.log("Previous comments loaded:", previousComments);
+      setComments(previousComments); // Replace comments with loaded history
     });
   
     socket.on("receive_reaction", (data : Reaction) => {
