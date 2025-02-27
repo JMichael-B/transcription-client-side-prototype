@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { socket, joinSession } from "../socket";
+import { socket } from "../socket";
 
 interface Comment {
   session_id: string;
@@ -32,7 +32,7 @@ export default function LiveCommentsReactions() {
   useEffect(() => {
     // socket.emit("connect", { userName });                                // Socket.IO already does this automatically. (No need to include)
     // socket.on("connect", () => console.log("Connected to WebSocket"));   // Optional Only (No need to include)
-    joinSession(sessionId);  // Join the session when the component mounts
+    socket.emit("join_session", { session_id: sessionId, username : userName});  // Join the session when the component mounts
 
     socket.on("update_total_users", (data) => {
       setTotalUserCount(data.count);
