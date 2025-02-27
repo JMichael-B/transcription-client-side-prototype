@@ -81,7 +81,9 @@ export default function LiveCommentsReactions() {
   };
 
   const handleTabClick = (session_id: string) => {
+    socket.emit("leave_session", { session_id: sessionId, username: userName });
     setSessionId(session_id);  // Change the active session when a tab is clicked
+    // socket.emit("join_session", { session_id, username: userName }); // Will Automatically Join Session when session_id is Changed (No Need to Include)
   };
 
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
