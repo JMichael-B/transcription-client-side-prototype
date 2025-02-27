@@ -91,7 +91,7 @@ export default function LiveCommentsReactions() {
   return (
     <div>
       <div>
-        <strong>Total Connected Users:</strong> {totalUserCount}
+        <strong>Total Connected Users 👥: </strong> {totalUserCount}
       </div>
 
       <div style={{ marginBottom: "20px" }}>
@@ -118,7 +118,7 @@ export default function LiveCommentsReactions() {
       </div>
 
       {/* Render the chat for the selected session */}
-      <h2>Live Chat (Session: {sessionId})</h2>
+      <h2>Live Comments & Reaction (Session: {sessionId})</h2>
       <div>
         {comments.map((msg, idx) => (
             <p key={idx}>
