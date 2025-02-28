@@ -11,15 +11,3 @@ export const socket = io("http://localhost:9000", {
 //     path: "/qurious-engagement/socket.io/",
 //     transports: ["websocket"],
 // });
-
-// Joining Session
-export const joinSession = (sessionId: string) => {
-    socket.emit("join_session", { session_id: sessionId });
-};
-
-//FastAPI SOCKETIO
-// export const socket = io("http://localhost:9000", {
-//     path: "/socket.io/",
-//     transports: ["websocket"],
-//     withCredentials: true,
-// });

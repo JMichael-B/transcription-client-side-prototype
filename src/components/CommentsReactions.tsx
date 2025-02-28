@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { socket, joinSession } from "../socket";
+import { socket } from "../socket";
 
 interface Comment {
   session_id: string;
@@ -13,6 +13,8 @@ interface Reaction {
 }
 
 export default function LiveCommentsReactions() {
+  const [totalUserCount, setTotalUserCount] = useState<number>(0);
+
   const [comments, setComments] = useState<Comment[]>([]);
   const [comment, setComment] = useState("");
 
@@ -24,11 +26,17 @@ export default function LiveCommentsReactions() {
     { session_id: "67789", name: "Session 67789" },
     { session_id: "11111", name: "Session 11111" },
   ]);
-  const [username, setUsername] = useState("User1");  // Default username
+  const [userName, setUserName] = useState("User1");  // Default userName
   const [sessionId, setSessionId] = useState("12345");  // Default session ID
 
   useEffect(() => {
-    joinSession(sessionId);  // Join the session when the component mounts
+    // socket.emit("connect", { userName });                                // Socket.IO already does this automatically. (No need to include)
+    // socket.on("connect", () => console.log("Connected to WebSocket"));   // Optional Only (No need to include)
+    socket.emit("join_session", { session_id: sessionId, username : userName});  // Join the session when the component mounts
+
+    socket.on("update_total_users", (data) => {
+      setTotalUserCount(data.count);
+    });
 
     socket.on("recieved_comment", (data: Comment) => {
       console.log("Comment received:", data);
@@ -44,13 +52,13 @@ export default function LiveCommentsReactions() {
       setReactions((prev) => [...prev, data]);
     });
   
-    socket.on("connect", () => console.log("Connected to WebSocket"));
-  
     return () => {
+      socket.off("update_total_users");
       socket.off("recieved_comment");
       socket.off("load_previous_comments");
       socket.off("receive_reaction");
-      socket.off("connect");
+      // socket.off("connect"); // Socket.IO does this automatically.
+      // socket.off("disconnect"); // Socket.IO does this automatically.
     };
   }, [sessionId]); // Re-run effect when sessionId changes
 
@@ -59,7 +67,7 @@ export default function LiveCommentsReactions() {
       const timestamp = new Date().toISOString();
       const newComment: Comment = { 
         session_id: sessionId,
-        username: username, 
+        username: userName, 
         comment: comment, 
         timestamp : timestamp 
       };
@@ -73,16 +81,21 @@ export default function LiveCommentsReactions() {
   };
 
   const handleTabClick = (session_id: string) => {
+    socket.emit("leave_session", { session_id: sessionId, username: userName });
     setSessionId(session_id);  // Change the active session when a tab is clicked
+    // socket.emit("join_session", { session_id, username: userName }); // Will Automatically Join Session when session_id is Changed (No Need to Include)
   };
 
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUsername(e.target.value);  // Update the username when input changes
+    setUserName(e.target.value);  // Update the username when input changes
   };
 
   return (
     <div>
-      {/* Render tabs for different sessions */}
+      <div>
+        <strong>Total Connected Users 👥: </strong> {totalUserCount}
+      </div>
+
       <div style={{ marginBottom: "20px" }}>
         {sessions.map((session) => (
           <button
@@ -100,14 +113,14 @@ export default function LiveCommentsReactions() {
         <label>Username: </label>
         <input
           type="text"
-          value={username}
+          value={userName}
           onChange={handleUsernameChange}
           placeholder="Enter your username"
         />
       </div>
 
       {/* Render the chat for the selected session */}
-      <h2>Live Chat (Session: {sessionId})</h2>
+      <h2>Live Comments & Reaction (Session: {sessionId})</h2>
       <div>
         {comments.map((msg, idx) => (
             <p key={idx}>
