@@ -110,7 +110,7 @@ export default function LiveCommentsReactions() {
 
             return (
               <div key={session.session_id}>
-                <strong>{session.name}</strong>: {userCount} users
+                <strong>{session.name}</strong>: {userCount}
               </div>
             );
           })}
