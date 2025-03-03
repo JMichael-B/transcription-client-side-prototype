@@ -58,8 +58,15 @@ export default function LiveCommentsReactions() {
     socket.on("receive_reaction", (data : Reaction) => {
       setReactions((prev) => [...prev, data]);
     });
+
+    const handleBeforeUnload = () => {
+      socket.emit("leave_session", { session_id: sessionId, username: userName });  // Ensures that the leave_session is executed before the window is closed
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload); 
   
     return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
       socket.off("update_total_users");
       socket.off("recieved_comment");
       socket.off("load_previous_comments");
