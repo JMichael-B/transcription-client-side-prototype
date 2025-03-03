@@ -15,6 +15,8 @@ interface Reaction {
 export default function LiveCommentsReactions() {
   const [totalUserCount, setTotalUserCount] = useState<number>(0);
 
+  const [sessionUsers, setSessionUsers] = useState<{ [key: string]: { [key: string]: string } }>({});
+
   const [comments, setComments] = useState<Comment[]>([]);
   const [comment, setComment] = useState("");
 
@@ -36,6 +38,11 @@ export default function LiveCommentsReactions() {
 
     socket.on("update_total_users", (data) => {
       setTotalUserCount(data.count);
+    });
+
+    socket.on("update_all_session_users", (data) => {
+      console.log("all session users received:", data);
+      setSessionUsers(data);
     });
 
     socket.on("recieved_comment", (data: Comment) => {
@@ -92,10 +99,25 @@ export default function LiveCommentsReactions() {
 
   return (
     <div>
+      {/* Render Total Connected Users */}
       <div>
         <strong>Total Connected Users 👥: </strong> {totalUserCount}
       </div>
+      <div style={{ padding: "10px", border: "1px solid #ccc", margin: "5px 0", borderRadius: "5px" }}>
+        <div>Active Users per Session 👥</div>
+          {sessions.map((session) => {
+            const userCount = sessionUsers[session.session_id] ? Object.keys(sessionUsers[session.session_id]).length : 0;
 
+            return (
+              <div key={session.session_id}>
+                <strong>{session.name}</strong>: {userCount} users
+              </div>
+            );
+          })}
+
+      </div>
+
+      {/* Render Tabs */}
       <div style={{ marginBottom: "20px" }}>
         {sessions.map((session) => (
           <button
