@@ -30,11 +30,13 @@ export default function LiveCommentsReactions() {
   ]);
   const [userName, setUserName] = useState("User1");  // Default userName
   const [sessionId, setSessionId] = useState("12345");  // Default session ID
+  const [role, setRole] = useState<string>("listener");  // Default role as "listener"
+  const [prevRole, setPrevRole] = useState<string>(""); // Track previous role
 
   useEffect(() => {
     // socket.emit("connect", { userName });                                // Socket.IO already does this automatically. (No need to include)
     // socket.on("connect", () => console.log("Connected to WebSocket"));   // Optional Only (No need to include)
-    socket.emit("join_session", { session_id: sessionId, username : userName});  // Join the session when the component mounts
+    socket.emit("join_session", { session_id: sessionId, username : userName, role : role});  // Join the session when the component mounts
 
     socket.on("update_total_users", (data) => {
       setTotalUserCount(data.count);
@@ -60,7 +62,7 @@ export default function LiveCommentsReactions() {
     });
 
     const handleBeforeUnload = () => {
-      socket.emit("leave_session", { session_id: sessionId, username: userName });  // Ensures that the leave_session is executed before the window is closed
+      socket.emit("leave_session", { session_id: sessionId, username: userName , role: role});  // Ensures that the leave_session is executed before the window is closed
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload); 
@@ -74,7 +76,20 @@ export default function LiveCommentsReactions() {
       // socket.off("connect"); // Socket.IO does this automatically.
       // socket.off("disconnect"); // Socket.IO does this automatically.
     };
-  }, [sessionId]); // Re-run effect when sessionId changes
+  }, [sessionId]); // Re-run effect when sessionId or role changed
+
+  // Handle role change: Leave and Rejoin
+  useEffect(() => {
+    if (role !== prevRole) {
+      console.log(`Role changed from ${prevRole} to ${role}. Rejoining session...`);
+      socket.emit("leave_session", { session_id: sessionId, username: userName, role: prevRole });
+      setTimeout(() => {
+        socket.emit("join_session", { session_id: sessionId, username: userName, role });
+      }, 500); // Small delay to ensure proper leave before rejoining
+
+      setPrevRole(role); // Update previous role
+    }
+  }, [role]); // Runs when role changes
 
   const sendComment = () => {
     if (comment.trim()) {
@@ -135,6 +150,15 @@ export default function LiveCommentsReactions() {
             {session.name}
           </button>
         ))}
+      </div>
+
+      {/* Role Toggle */}
+      <div>
+        <label>Role: </label>
+        <select value={role} onChange={(e) => setRole(e.target.value)}>
+          <option value="listener">Listener</option>
+          <option value="speaker">Speaker</option>
+        </select>
       </div>
 
       {/* Render Username Input */}
