@@ -5,7 +5,9 @@ interface Comment {
   session_id: string;
   username: string;
   comment: string;
+  translated_comment?: string;  // Add translated_comment
   timestamp: string;
+  speaker_language: string;
 }
 
 interface Reaction {
@@ -20,6 +22,7 @@ export default function LiveCommentsReactions() {
 
   const [comments, setComments] = useState<Comment[]>([]);
   const [comment, setComment] = useState("");
+  const [showTranslated, setShowTranslated] = useState<boolean>(false); // Toggle state
 
   const [reactions, setReactions] = useState<Reaction[]>([]);
 
@@ -105,7 +108,9 @@ export default function LiveCommentsReactions() {
         session_id: sessionId,
         username: userName, 
         comment: comment, 
-        timestamp : timestamp 
+        translated_comment: "", // Placeholder (Backend will translate and emit the updated comment)
+        timestamp: timestamp,
+        speaker_language: "tl" // Hardcoded for now (should be dynamic)
       };
       socket.emit("send_comment", newComment);
       setComment("");
@@ -194,10 +199,14 @@ export default function LiveCommentsReactions() {
 
       {/* Render the chat for the selected session */}
       <h2>Live Comments (session_id: {sessionId})</h2>
+      <button onClick={() => setShowTranslated(!showTranslated)}>
+        {showTranslated ? "Show Original" : "Translate"}
+      </button>
       <div>
         {comments.map((msg, idx) => (
             <p key={idx}>
-              <strong>{msg.username}:</strong> {msg.comment} 
+              <strong>{msg.username}:</strong>{" "}
+              {showTranslated && msg.translated_comment ? msg.translated_comment : msg.comment}   {/* Switches from translated_comment --> comment */}
               <span style={{ fontSize: "0.8rem", color: "gray", marginLeft: "10px" }}>
                 {new Date(msg.timestamp).toLocaleTimeString()}
               </span>
