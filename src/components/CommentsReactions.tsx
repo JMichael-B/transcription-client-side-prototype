@@ -7,7 +7,7 @@ interface Comment {
   comment: string;
   translated_comment?: string;  // Add translated_comment
   timestamp: string;
-  speaker_language: string;
+  preferred_language: string;
 }
 
 interface Reaction {
@@ -110,7 +110,7 @@ export default function LiveCommentsReactions() {
         comment: comment, 
         translated_comment: "", // Placeholder (Backend will translate and emit the updated comment)
         timestamp: timestamp,
-        speaker_language: "tl" // Hardcoded for now (should be dynamic)
+        preferred_language: "tl" // Hardcoded for now (should be dynamic)
       };
       socket.emit("send_comment", newComment);
       setComment("");
