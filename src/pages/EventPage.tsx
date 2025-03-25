@@ -92,24 +92,27 @@ const EventPage: React.FC = () => {
 
     useEffect(() => {
         // General Level Response
-
         socket.on("server_message", (data) => {
             console.log("Server Message:  ", data);
         });
-
+    
+        return () => {
+            socket.off("server_message");
+        };
+    }, []);
+    
+    useEffect(() => {
         // Event Level Responses
-
         socket.on("count_users_all_session", (data) => {
-            console.log("All Session Users:", data);
+            console.log("All Session UserCount:", data);
         });
-
+    
         socket.on("update_status_all_session", (data) => {
             console.log("All Session Status:", data);
         });
-
+    
         return () => {
-            socket.off("server_message");
-            socket.off("update_users_all_session");
+            socket.off("count_users_all_session");
             socket.off("update_status_all_session");
         };
     }, []);
