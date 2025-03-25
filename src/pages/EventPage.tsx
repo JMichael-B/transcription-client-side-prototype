@@ -99,7 +99,7 @@ const EventPage: React.FC = () => {
 
         // Event Level Responses
 
-        socket.on("update_users_all_session", (data) => {
+        socket.on("count_users_all_session", (data) => {
             console.log("All Session Users:", data);
         });
 
@@ -107,6 +107,14 @@ const EventPage: React.FC = () => {
             console.log("All Session Status:", data);
         });
 
+        return () => {
+            socket.off("server_message");
+            socket.off("update_users_all_session");
+            socket.off("update_status_all_session");
+        };
+    }, []);
+
+    useEffect(() => {
         // Session Level Responses
 
         socket.on("load_previous_comments", (comments: Comment[]) => {
