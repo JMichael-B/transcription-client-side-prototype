@@ -1,12 +1,12 @@
 import React from "react";
-import CommentsReactions from "./components/CommentsReactions";
+import EventPage from "./pages/EventPage";
 
 const App: React.FC = () => {
-    return (
-        <div className="flex items-center justify-center h-screen bg-gray-100">
-            <CommentsReactions />
-        </div>
-    );
+  return (
+    <div>
+      <EventPage />
+    </div>
+  );
 };
 
 export default App;
