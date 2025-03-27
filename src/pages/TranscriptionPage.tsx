@@ -3,6 +3,12 @@ import React, { useState, useEffect, useRef } from "react";
 // const SERVER_URL = "ws://localhost:9000/ws/gladia/speaker"
 // const LISTEN_URL = "ws://localhost:9000/ws/gladia/listener"
 
+const event_id = "eABC";
+const room_id = "s012";
+const speaker_id = "michael012";
+const default_language = "en";
+const languages = ["en", "es"]; // Example: English & Spanish
+
 
 const TranscriptionPage: React.FC = () => {
   const [isStreaming, setIsStreaming] = useState(false);
@@ -13,7 +19,9 @@ const TranscriptionPage: React.FC = () => {
 
   useEffect(() => {
     // Connect to transcription WebSocket
-    transcriptionSocketRef.current = new WebSocket("ws://localhost:9000/ws/gladia/listener");
+    transcriptionSocketRef.current = new WebSocket(
+      `ws://localhost:9986/ws/gladia/listener?event_id=${event_id}&room_id=${room_id}&speaker_id=${speaker_id}&lang=${default_language}`
+    );
 
     transcriptionSocketRef.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -34,7 +42,9 @@ const TranscriptionPage: React.FC = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
       
-      audioSocketRef.current = new WebSocket("ws://localhost:9000/ws/gladia/speaker");
+      audioSocketRef.current = new WebSocket(
+        `ws://localhost:9986/ws/gladia/speaker?event_id=${event_id}&room_id=${room_id}&speaker_id=${speaker_id}&default_language=${default_language}&languages=${languages.join(",")}`
+      );
       
       audioSocketRef.current.onopen = () => {
         console.log("Audio WebSocket connected");
