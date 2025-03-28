@@ -1,35 +1,42 @@
 import React, { useState, useEffect, useRef } from "react";
 
-// const SERVER_URL = "ws://localhost:9000/ws/gladia/speaker"
-// const LISTEN_URL = "ws://localhost:9000/ws/gladia/listener"
+// WebSocket Endpoints
+const SERVER_URL = "ws://localhost:9986/ws/gladia/speaker";
+const LISTEN_URL = "ws://localhost:9986/ws/gladia/listener";
 
+// Required WebSocket Parameters
 const event_id = "eABC";
 const room_id = "s012";
 const speaker_id = "michael012";
 const default_language = "en";
-const languages = ["en", "es"]; // Example: English & Spanish
-
 
 const TranscriptionPage: React.FC = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [transcription, setTranscription] = useState<string>("");
-  const audioSocketRef = useRef<WebSocket | null>(null);
-  const transcriptionSocketRef = useRef<WebSocket | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
+  // WebSocket & Audio Refs
+  const wsSender = useRef<WebSocket | null>(null);
+  const transcriptionSocketRef = useRef<WebSocket | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  // Connect to Transcription WebSocket
   useEffect(() => {
-    // Connect to transcription WebSocket
     transcriptionSocketRef.current = new WebSocket(
-      `ws://localhost:9986/ws/gladia/listener?event_id=${event_id}&room_id=${room_id}&speaker_id=${speaker_id}&lang=${default_language}`
+      `${LISTEN_URL}?event_id=${event_id}&room_id=${room_id}&speaker_id=${speaker_id}&lang=${default_language}`
     );
 
     transcriptionSocketRef.current.onmessage = (event) => {
+      console.log("Received transcription:", event);
       const data = JSON.parse(event.data);
+      console.log("TRANSCRIPTION DATA:", data)
       setTranscription((prev) => prev + " " + data.translated);
     };
 
     transcriptionSocketRef.current.onclose = () => {
-      console.log("Transcription WebSocket closed");
+      console.log("🔴 Transcription WebSocket closed");
     };
 
     return () => {
@@ -37,46 +44,122 @@ const TranscriptionPage: React.FC = () => {
     };
   }, []);
 
+  // Start Audio Streaming
   const startStreaming = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      
-      audioSocketRef.current = new WebSocket(
-        `ws://localhost:9986/ws/gladia/speaker?event_id=${event_id}&room_id=${room_id}&speaker_id=${speaker_id}&default_language=${default_language}&languages=${languages.join(",")}`
-      );
-      
-      audioSocketRef.current.onopen = () => {
-        console.log("Audio WebSocket connected");
-      };
+      // Ensure WebSocket is connected
+      if (!wsSender.current || wsSender.current.readyState !== WebSocket.OPEN) {
+        wsSender.current = new WebSocket(
+          `${SERVER_URL}?event_id=${event_id}&room_id=${room_id}&speaker_id=${speaker_id}&lang=${default_language}`
+        );
+        wsSender.current.binaryType = "arraybuffer";
 
-      audioSocketRef.current.onerror = (error) => {
-        console.error("WebSocket error:", error);
-      };
+        wsSender.current.onopen = () => {
+          console.log("🎤 WebSocket connected, ready to send audio...");
+          setIsStreaming(true);
+        };
 
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        if (event.data.size > 0 && audioSocketRef.current?.readyState === WebSocket.OPEN) {
-          audioSocketRef.current.send(event.data);
+        wsSender.current.onerror = (error) => {
+          console.error("WebSocket Error:", error);
+          setIsStreaming(false);
+        };
+
+        wsSender.current.onclose = () => {
+          console.log("🔴 WebSocket Disconnected");
+          wsSender.current = null;
+          setIsStreaming(false);
+        };
+      }
+
+      // Request microphone access
+      if (!streamRef.current) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            noiseSuppression: true,
+            echoCancellation: true,
+            autoGainControl: true
+          }
+        });
+        streamRef.current = stream;
+      }
+
+      // Setup Audio Context
+      const audioContext = new AudioContext({ sampleRate: 16000 });
+      audioContextRef.current = audioContext;
+      const source = audioContext.createMediaStreamSource(streamRef.current);
+      sourceRef.current = source;
+      const processor = audioContext.createScriptProcessor(1024, 1, 1);
+      processorRef.current = processor;
+
+      // Audio Filters
+      const highPassFilter = audioContext.createBiquadFilter();
+      highPassFilter.type = "highpass";
+      highPassFilter.frequency.value = 100;
+
+      const compressor = audioContext.createDynamicsCompressor();
+      compressor.threshold.value = -50;
+      compressor.knee.value = 40;
+      compressor.ratio.value = 12;
+      compressor.attack.value = 0.003;
+      compressor.release.value = 0.25;
+
+      // Connect Audio Nodes
+      source.connect(highPassFilter);
+      highPassFilter.connect(compressor);
+      compressor.connect(processor);
+      processor.connect(audioContext.destination);
+
+      // Process & Send Audio
+      processor.onaudioprocess = (event) => {
+        const audioData = event.inputBuffer.getChannelData(0);
+        const buffer = new ArrayBuffer(audioData.length * 2);
+        const view = new DataView(buffer);
+
+        for (let i = 0; i < audioData.length; i++) {
+          const s = Math.max(-1, Math.min(1, audioData[i]));
+          view.setInt16(i * 2, s * 32767, true);
+        }
+
+        if (wsSender.current && wsSender.current.readyState === WebSocket.OPEN) {
+          wsSender.current.send(buffer);
         }
       };
-      
-      mediaRecorderRef.current.start(500);
-      setIsStreaming(true);
     } catch (error) {
-      console.error("Error accessing microphone:", error);
+      console.error("Error starting streaming:", error);
     }
   };
 
+  // Stop Streaming
   const stopStreaming = () => {
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+    console.log("🛑 Stopping audio streaming...");
+
+    // Stop audio processing
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current.onaudioprocess = null;
     }
-    
-    if (audioSocketRef.current) {
-      audioSocketRef.current.close();
+
+    if (sourceRef.current) {
+      sourceRef.current.disconnect();
     }
-    
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+
+    // Stop microphone
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+
+    // Close WebSocket
+    if (wsSender.current) {
+      wsSender.current.close();
+      wsSender.current = null;
+    }
+
     setIsStreaming(false);
   };
 
