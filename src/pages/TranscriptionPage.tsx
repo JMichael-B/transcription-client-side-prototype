@@ -5,12 +5,12 @@ import React, { useState, useEffect, useRef } from "react";
 // const LISTEN_URL = "ws://localhost:9986/ws/gladia/listener";
 
 // WebSocket Endpoints (PH SERVER)
-const SERVER_URL = "wss://qurious.ddns.net/qurious-transcription/ws/gladia/speaker";
-const LISTEN_URL = "wss://qurious.ddns.net/qurious-transcription/ws/gladia/listener";
+// const SERVER_URL = "wss://qurious.ddns.net/qurious-transcription/ws/gladia/speaker";
+// const LISTEN_URL = "wss://qurious.ddns.net/qurious-transcription/ws/gladia/listener";
 
 // WebSocket Endpoints (AWS SERVER)
-// const SERVER_URL = "wss://api.qurious.lexcodeapi.com/transcription/ws/gladia/speaker";
-// const LISTEN_URL = "wss://api.qurious.lexcodeapi.com/transcription/ws/gladia/listener";
+const SERVER_URL = "wss://api.qurious.lexcodeapi.com/transcription/ws/gladia/speaker";
+const LISTEN_URL = "wss://api.qurious.lexcodeapi.com/transcription/ws/gladia/listener";
 
 // Required WebSocket Parameters
 const event_id = "eABC";
