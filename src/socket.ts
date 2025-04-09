@@ -1,10 +1,10 @@
 import { io } from "socket.io-client";
 
 // FLASK SOCKETIO (LOCAL)
-// export const socket = io("http://localhost:9000", {
-//     path: "/socket.io/",
-//     transports: ["websocket"],
-// });
+export const socket = io("http://localhost:9985", {
+    path: "/socket.io/",
+    transports: ["websocket"],
+});
 
 // FLASK SOCKETIO (PH SERVER)
 // export const socket = io("wss://qurious.ddns.net", {
@@ -13,7 +13,7 @@ import { io } from "socket.io-client";
 // });
 
 // FLASK SOCKETIO (AWS SERVER)
-export const socket = io("https://api.qurious.lexcodeapi.com", {
-    path: "/engagement/socket.io/",
-    transports: ["websocket"],
-});
+// export const socket = io("https://api.qurious.lexcodeapi.com", {
+//     path: "/engagement/socket.io/",
+//     transports: ["websocket"],
+// });

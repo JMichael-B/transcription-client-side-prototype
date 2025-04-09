@@ -53,6 +53,7 @@ const EventPage: React.FC = () => {
     const [currentSession, setCurrentSession] = useState<{ event_id: string; session_id: string; session_name: string } | null>(null);
     const [userCounts, setUserCounts] = useState<{ [key: string]: number }>({});
     const [sessionStatus, setSessionStatus] = useState<{ [key: string]: boolean }>({});
+    const [currentEventCount, setCurrentEventCount] = useState<boolean | null >(null);
     const [currentsessionStatus, setCurrentSessionStatus] = useState<boolean | null>(null);
     const [currentsessionCount, setCurrentSessionCount] = useState<boolean | null >(null);
 
@@ -146,6 +147,12 @@ const EventPage: React.FC = () => {
     
     useEffect(() => {
         // Event Level Responses
+
+        socket.on("count_users_current_event", (data) => {
+            console.log("Event Participants:", data);
+            setCurrentEventCount(data.count);
+        });
+
         socket.on("count_users_all_session", (data) => {
             console.log("All Session UserCount:", data);
             setUserCounts(data);
@@ -157,6 +164,7 @@ const EventPage: React.FC = () => {
         });
     
         return () => {
+            socket.off("count_users_current_event");
             socket.off("count_users_all_session");
             socket.off("update_status_all_session");
         };
@@ -228,6 +236,10 @@ const EventPage: React.FC = () => {
 
             {/* Event Title*/}
             <h1>{event_payload.event_name}</h1>
+            <h3>⮞ User Count: {currentEventCount ? currentEventCount : "---"}</h3>
+
+            {/* Session List */}
+            <h3>◉ Sessions:</h3>
 
             {/* Session Launch/End */}
             <div style={{ display: "flex", gap: "10px", marginTop: "10px", alignItems: "center" }}>
@@ -265,8 +277,8 @@ const EventPage: React.FC = () => {
             {/* Current Session Status & UserCount */}
             <div style={{ border: "1px solid white", padding: "10px", marginTop: "10px" }}>
                 <h3 style={{ margin: "0 0 0 0" }}>{currentSession?.session_name} Status</h3>
-                <p>Status: {currentsessionStatus ? "🟢" : "---"}</p>
-                <p>Users Count: {currentsessionCount}</p>
+                <p>⮞ Status: {currentsessionStatus ? "🟢" : "---"}</p>
+                <p>⮞ User Count: {currentsessionCount}</p>
             </div>
 
             {/* Comment Section */}
