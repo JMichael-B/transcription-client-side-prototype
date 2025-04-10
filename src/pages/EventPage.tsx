@@ -199,9 +199,6 @@ const EventPage: React.FC = () => {
         });
 
         return () => {
-            socket.off("server_message");
-            socket.off("update_users_all_session");
-            socket.off("update_status_all_session");
             socket.off("load_previous_comments");
             socket.off("count_users_current_session");
             socket.off("update_status_current_session");
