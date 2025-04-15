@@ -54,6 +54,7 @@ const EventPage: React.FC = () => {
     const [userCounts, setUserCounts] = useState<{ [key: string]: number }>({});
     const [sessionStatus, setSessionStatus] = useState<{ [key: string]: boolean }>({});
     const [currentEventCount, setCurrentEventCount] = useState<boolean | null >(null);
+    const [eventAvgTime, setEventAvgTime] = useState<number | null>(null);
     const [currentsessionStatus, setCurrentSessionStatus] = useState<boolean | null>(null);
     const [currentsessionCount, setCurrentSessionCount] = useState<boolean | null >(null);
 
@@ -62,12 +63,14 @@ const EventPage: React.FC = () => {
     };
 
     const handleJoinEvent = () => {
-        socket.emit("join_event", { event_id: event_payload.event_id, role: role });
+        socket.emit("join_event", { event_id: event_payload.event_id, username: username, role: role }); // Join Event
+        socket.emit("track_join", { event_id: event_payload.event_id, username: username, role: role }); // Track Join
         setJoined(true);
     };
 
     const handleLeaveEvent = () => {
-        socket.emit("leave_event", { event_id: event_payload.event_id, role: role });
+        socket.emit("leave_event", { event_id: event_payload.event_id, username: username, role: role }); // Leave Event
+        socket.emit("track_leave", { event_id: event_payload.event_id, username: username, role: role }); // Track Leave
         setJoined(false);
     };
 
@@ -153,6 +156,16 @@ const EventPage: React.FC = () => {
             setCurrentEventCount(data.count);
         });
 
+        socket.on("load_average_time_spent", (data) => {
+            console.log("Load Average Time Spent:", data);
+            setEventAvgTime(data.avg_time);
+        });
+
+        socket.on("update_average_time_spent", (data) => {
+            console.log("Average Time Spent:", data);
+            setEventAvgTime(data.avg_time);
+        });
+
         socket.on("count_users_all_session", (data) => {
             console.log("All Session UserCount:", data);
             setUserCounts(data);
@@ -165,6 +178,8 @@ const EventPage: React.FC = () => {
     
         return () => {
             socket.off("count_users_current_event");
+            socket.off("load_average_time_spent");
+            socket.off("update_average_time_spent");
             socket.off("count_users_all_session");
             socket.off("update_status_all_session");
         };
@@ -199,9 +214,6 @@ const EventPage: React.FC = () => {
         });
 
         return () => {
-            socket.off("server_message");
-            socket.off("update_users_all_session");
-            socket.off("update_status_all_session");
             socket.off("load_previous_comments");
             socket.off("count_users_current_session");
             socket.off("update_status_current_session");
@@ -237,6 +249,7 @@ const EventPage: React.FC = () => {
             {/* Event Title*/}
             <h1>{event_payload.event_name}</h1>
             <h3>⮞ User Count: {currentEventCount ? currentEventCount : "---"}</h3>
+            <h3>⮞ Average Time Spent: {eventAvgTime ? eventAvgTime : "---"}</h3>
 
             {/* Session List */}
             <h3>◉ Sessions:</h3>
