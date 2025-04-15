@@ -1,26 +1,28 @@
 import React, { useState, useEffect, useRef } from "react";
 
 // WebSocket Endpoints (LOCAL)
-// const SERVER_URL = "ws://localhost:9986/ws/gladia/speaker";
-// const LISTEN_URL = "ws://localhost:9986/ws/gladia/listener";
+const SERVER_URL = "ws://localhost:9986/ws/gladia/speaker";
+const LISTEN_URL = "ws://localhost:9986/ws/gladia/listener";
 
 // WebSocket Endpoints (PH SERVER)
 // const SERVER_URL = "wss://qurious.ddns.net/qurious-transcription/ws/gladia/speaker";
 // const LISTEN_URL = "wss://qurious.ddns.net/qurious-transcription/ws/gladia/listener";
 
 // WebSocket Endpoints (AWS SERVER)
-const SERVER_URL = "wss://api.qurious.lexcodeapi.com/transcription/ws/gladia/speaker";
-const LISTEN_URL = "wss://api.qurious.lexcodeapi.com/transcription/ws/gladia/listener";
+// const SERVER_URL = "wss://api.qurious.lexcodeapi.com/transcription/ws/gladia/speaker";
+// const LISTEN_URL = "wss://api.qurious.lexcodeapi.com/transcription/ws/gladia/listener";
 
 // Required WebSocket Parameters
-const event_id = "eABC";
-const room_id = "s012";
-const speaker_id = "michael012";
-const default_language = "en";
+const event_id : string = "eABC";
+const room_id : string = "s012";
+const speaker_id : string = "michael012";
+const default_language : string = "en";
 
 const TranscriptionPage: React.FC = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [transcription, setTranscription] = useState<string>("");
+  const [translatedTranscription, setTranslatedTranscription] = useState<string>("");
+  const [language, setLanguage] = useState<string>(default_language);
 
   // WebSocket & Audio Refs
   const wsSender = useRef<WebSocket | null>(null);
@@ -33,14 +35,16 @@ const TranscriptionPage: React.FC = () => {
   // Connect to Transcription WebSocket
   useEffect(() => {
     transcriptionSocketRef.current = new WebSocket(
-      `${LISTEN_URL}?event_id=${event_id}&room_id=${room_id}&speaker_id=${speaker_id}&lang=${default_language}`
+      `${LISTEN_URL}?event_id=${event_id}&room_id=${room_id}&speaker_id=${speaker_id}&lang=${language}`
     );
 
     transcriptionSocketRef.current.onmessage = (event) => {
-      console.log("Received transcription:", event);
+      // console.log("Received transcription:", event);
       const data = JSON.parse(event.data);
       console.log("TRANSCRIPTION DATA:", data)
-      setTranscription((prev) => prev + " " + data.translated);
+      
+      setTranscription((prev) => prev + " " + data.original);
+      setTranslatedTranscription((prev) => prev + "\n" + data.translated);
     };
 
     transcriptionSocketRef.current.onclose = () => {
@@ -50,7 +54,7 @@ const TranscriptionPage: React.FC = () => {
     return () => {
       transcriptionSocketRef.current?.close();
     };
-  }, []);
+  }, [language]);
 
   // Start Audio Streaming
   const startStreaming = async () => {
@@ -173,17 +177,54 @@ const TranscriptionPage: React.FC = () => {
 
   return (
     <div className="p-4 max-w-xl mx-auto">
-      <h1 className="text-xl font-bold">Live Transcription</h1>
-      <button 
-        className={`mt-4 px-4 py-2 text-white rounded ${isStreaming ? 'bg-red-500' : 'bg-green-500'}`} 
+      <h1 className="text-xl font-bold">Live Transcription Tester</h1>
+
+      <h2>Microphone (Speaker):</h2>
+      <button
+        className={`mt-4 px-4 py-2 text-white rounded ${isStreaming ? "bg-red-500" : "bg-green-500"}`}
         onClick={isStreaming ? stopStreaming : startStreaming}
       >
         {isStreaming ? "Stop Streaming" : "Start Streaming"}
       </button>
-      <div className="mt-4 p-4 border border-gray-300 rounded">
-        <h2 className="text-lg font-semibold">Transcription:</h2>
-        <p className="text-gray-700 whitespace-pre-line">{transcription}</p>
+
+      <h2>Transcription (listener):</h2>
+      <label htmlFor="language-select" className="block text-sm font-medium text-gray-700">
+          Select Language:
+      </label>
+      <select
+        id="language-select"
+        className="mt-1 block w-full p-2 border border-gray-300 rounded"
+        value={language}
+        onChange={(e) => setLanguage(e.target.value)}
+      >
+        <option value="en">English</option>
+        <option value="tl">Tagalog</option>
+        <option value="ko">Korean</option>
+      </select>
+
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold">Original Transcription:</h3>
+        <div style={{ height: "200px", overflowY: "scroll", border: "1px solid black", marginTop: "10px", padding: "10px" }}>
+          {transcription.split("\n").map((line, index) => (
+            <p key={index} className="text-gray-700 whitespace-pre-line">
+              {line}
+            </p>
+          ))}
+        </div>
       </div>
+
+      {/* Translated Transcription Section */}
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold">{language} Translation:</h3>
+        <div style={{ height: "200px", overflowY: "scroll", border: "1px solid black", marginTop: "10px", padding: "10px" }}>
+          {translatedTranscription.split("\n").map((line, index) => (
+            <p key={index} className="text-gray-700 whitespace-pre-line">
+              {line}
+            </p>
+          ))}
+        </div>
+      </div>
+
     </div>
   );
 };
