@@ -18,6 +18,9 @@ const room_id : string = "s012";
 const speaker_id : string = "michael012";
 const default_language : string = "en";
 
+const expected_languages: string[] = ["en", "tl", "kr"];
+
+
 const TranscriptionPage: React.FC = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [transcription, setTranscription] = useState<string>("");
@@ -44,7 +47,7 @@ const TranscriptionPage: React.FC = () => {
       console.log("TRANSCRIPTION DATA:", data)
       
       setTranscription((prev) => prev + " " + data.original);
-      setTranslatedTranscription((prev) => prev + "\n" + data.translated);
+      setTranslatedTranscription((prev) => prev + " " + data.translated);
     };
 
     transcriptionSocketRef.current.onclose = () => {
@@ -58,11 +61,13 @@ const TranscriptionPage: React.FC = () => {
 
   // Start Audio Streaming
   const startStreaming = async () => {
+
+    const langParam = expected_languages.join(",");
     try {
       // Ensure WebSocket is connected
       if (!wsSender.current || wsSender.current.readyState !== WebSocket.OPEN) {
         wsSender.current = new WebSocket(
-          `${SERVER_URL}?event_id=${event_id}&room_id=${room_id}&speaker_id=${speaker_id}&lang=${default_language}`
+          `${SERVER_URL}?event_id=${event_id}&room_id=${room_id}&speaker_id=${speaker_id}&lang=${langParam}`
         );
         wsSender.current.binaryType = "arraybuffer";
 
