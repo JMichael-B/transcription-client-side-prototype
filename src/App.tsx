@@ -4,7 +4,7 @@ import TranscriptionPage from "./pages/TranscriptionPage";
 
 const App: React.FC = () => {
   return (
-    <div>
+    <div style={{width: "100%"}}>
       {/* <EventPage /> */}
       <TranscriptionPage />
     </div>
