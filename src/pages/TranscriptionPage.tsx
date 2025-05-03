@@ -97,6 +97,11 @@ const TranscriptionPage: React.FC = () => {
     setTranslatedTranscription("");
   }, [eventId, roomId, speakerId]);
 
+  // Reset Summary
+  useEffect(() => {
+    setSummary("")
+  }, [language]);
+
   // Start Audio Streaming
   const startStreaming = async () => {
 
