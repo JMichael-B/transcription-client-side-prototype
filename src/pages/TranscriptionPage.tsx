@@ -14,15 +14,15 @@ const LISTEN_SUMMARY_URL = "ws://localhost:9986/ws/summary";
 // const LISTEN_URL = "wss://api.qurious.lexcodeapi.com/transcription/ws/gladia/listener";
 
 // Required WebSocket Parameters
-// const event_id : string = "event-abc";
-// const room_id : string = "session-012";
-// const speaker_id : string = "michael2025";
+const event_id : string = "event-abc";
+const room_id : string = "session-012";
+const speaker_id : string = "michael2025";
 const default_language : string = "en";
 const expected_languages: string[] = ["en", "tl", "kr"];
 
-const generateRandomId = (prefix: string) => {
-  return `${prefix}_${Math.random().toString(36).substr(2, 8)}`;
-};
+// const generateRandomId = (prefix: string) => {
+//   return `${prefix}_${Math.random().toString(36).substr(2, 8)}`;
+// };
 
 const TranscriptionPage: React.FC = () => {
   const [isStreaming, setIsStreaming] = useState(false);
@@ -31,9 +31,9 @@ const TranscriptionPage: React.FC = () => {
   const [summary, setSummary] = useState<string>("");
 
   // System Parameters
-  const [speakerId, setSpeakerId] = useState<string>(() => generateRandomId("speaker"));
-  const [eventId, setEventId] = useState<string>(() => generateRandomId("event"));
-  const [roomId, setRoomId] = useState<string>(() => generateRandomId("room"));
+  const [speakerId, setSpeakerId] = useState<string>(speaker_id);
+  const [eventId, setEventId] = useState<string>(event_id);
+  const [roomId, setRoomId] = useState<string>(room_id);
   const [language, setLanguage] = useState<string>(default_language);
   const [customPrompt, setCustomPrompt] = useState<string>("");
 
