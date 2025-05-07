@@ -8,6 +8,7 @@ const LISTEN_SUMMARY_URL = "ws://localhost:9986/ws/summary";
 // WebSocket Endpoints (PH SERVER)
 // const SERVER_URL = "wss://qurious.ddns.net/qurious-transcription/ws/gladia/speaker";
 // const LISTEN_URL = "wss://qurious.ddns.net/qurious-transcription/ws/gladia/listener";
+// const LISTEN_SUMMARY_URL = "wss://qurious.ddns.net/qurious-transcription/ws/summary";
 
 // WebSocket Endpoints (AWS SERVER)
 // const SERVER_URL = "wss://api.qurious.lexcodeapi.com/transcription/ws/gladia/speaker";
