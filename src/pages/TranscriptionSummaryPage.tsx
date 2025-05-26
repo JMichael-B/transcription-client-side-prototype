@@ -1,37 +1,40 @@
 import React, { useState, useEffect, useRef } from "react";
 
 // WebSocket Endpoints (LOCAL)
-// const SERVER_URL = "ws://localhost:9986/ws/gladia/speaker";
-// const LISTEN_URL = "ws://localhost:9986/ws/gladia/listener";
+const SERVER_URL = "ws://localhost:9986/ws/gladia/speaker";
+const LISTEN_URL = "ws://localhost:9986/ws/gladia/listener";
+const LISTEN_SUMMARY_URL = "ws://localhost:9986/ws/summary";
 
 // WebSocket Endpoints (PH SERVER)
-const SERVER_URL = "wss://qurious.ddns.net/qurious-transcription/ws/gladia/speaker";
-const LISTEN_URL = "wss://qurious.ddns.net/qurious-transcription/ws/gladia/listener";
+// const SERVER_URL = "wss://qurious.ddns.net/qurious-transcription/ws/gladia/speaker";
+// const LISTEN_URL = "wss://qurious.ddns.net/qurious-transcription/ws/gladia/listener";
+// const LISTEN_SUMMARY_URL = "wss://qurious.ddns.net/qurious-transcription/ws/summary";
 
 // WebSocket Endpoints (AWS SERVER)
 // const SERVER_URL = "wss://api.qurious.lexcodeapi.com/transcription/ws/gladia/speaker";
 // const LISTEN_URL = "wss://api.qurious.lexcodeapi.com/transcription/ws/gladia/listener";
 
 // Required WebSocket Parameters
-// const event_id : string = "event-abc";
-// const room_id : string = "session-012";
-// const speaker_id : string = "michael2025";
+const event_id : string = "event-abc";
+const room_id : string = "session-012";
+const speaker_id : string = "michael2025";
 const default_language : string = "en";
 const expected_languages: string[] = ["en", "tl", "kr"];
 
-const generateRandomId = (prefix: string) => {
-  return `${prefix}_${Math.random().toString(36).substr(2, 8)}`;
-};
+// const generateRandomId = (prefix: string) => {
+//   return `${prefix}_${Math.random().toString(36).substr(2, 8)}`;
+// };
 
 const TranscriptionPage: React.FC = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [transcription, setTranscription] = useState<string>("");
   const [translatedTranscription, setTranslatedTranscription] = useState<string>("");
+  const [summary, setSummary] = useState<string>("");
 
   // System Parameters
-  const [speakerId, setSpeakerId] = useState<string>(() => generateRandomId("speaker"));
-  const [eventId, setEventId] = useState<string>(() => generateRandomId("event"));
-  const [roomId, setRoomId] = useState<string>(() => generateRandomId("room"));
+  const [speakerId, setSpeakerId] = useState<string>(speaker_id);
+  const [eventId, setEventId] = useState<string>(event_id);
+  const [roomId, setRoomId] = useState<string>(room_id);
   const [language, setLanguage] = useState<string>(default_language);
   const [customPrompt, setCustomPrompt] = useState<string>("");
 
@@ -43,8 +46,8 @@ const TranscriptionPage: React.FC = () => {
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Connect to Transcription WebSocket
   useEffect(() => {
+    // Connect to Transcription WebSocket
     transcriptionSocketRef.current = new WebSocket(
       `${LISTEN_URL}?event_id=${eventId}&room_id=${roomId}&speaker_id=${speakerId}&lang=${language}`
     );
@@ -62,16 +65,43 @@ const TranscriptionPage: React.FC = () => {
       console.log("🔴 Transcription WebSocket closed");
     };
 
+    // Connect to Summarization Socket
+    const summarySocket = new WebSocket(
+      `${LISTEN_SUMMARY_URL}?event_id=${eventId}&room_id=${roomId}&speaker_id=${speakerId}&lang=${language}`
+    );
+  
+    summarySocket.onopen = () => {
+      console.log("🟢 Summary WebSocket connected");
+    };
+  
+    summarySocket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log("📩 Summary Received:", data);
+      if (data.summary) {
+        setSummary(data.summary); // overwrite previous summary
+      }
+    };
+  
+    summarySocket.onclose = () => {
+      console.log("🔴 Summary WebSocket disconnected");
+    };
+  
     return () => {
       transcriptionSocketRef.current?.close();
+      summarySocket.close();
     };
-  }, [language, eventId, roomId, speakerId]);
+  }, [eventId, roomId, speakerId, language]);
 
   // Reset Transcript
   useEffect(() => {
     setTranscription("");
     setTranslatedTranscription("");
   }, [eventId, roomId, speakerId]);
+
+  // Reset Summary
+  useEffect(() => {
+    setSummary("")
+  }, [language]);
 
   // Start Audio Streaming
   const startStreaming = async () => {
@@ -334,6 +364,18 @@ const TranscriptionPage: React.FC = () => {
               </p>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div style={{ borderTop: "2px dashed white", margin: "60px 0 30px 0" }}></div>
+      
+      {/* Summary Section */}
+      <h2 className="text-lg font-semibold mb-1">Summarization:</h2>
+      <div className="mt-2">
+        <div style={{ height: "200px", overflowY: "scroll", border: "1px solid black", padding: "10px"}}>
+          <p className="text-gray-700 whitespace-pre-line" style={{ userSelect: summary ? "auto" : "none", color: summary ? "inherit" : "gray"}}>
+            {summary || "Waiting for summary..."}
+          </p>
         </div>
       </div>
 
