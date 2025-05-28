@@ -21,6 +21,7 @@ const TranscriptionPage: React.FC = () => {
     const [eventId, setEventId] = useState<string>(event_id);
     const [roomId, setRoomId] = useState<string>(room_id);
     const [language, setLanguage] = useState<string>(default_language);
+    const [showAIVoice, setShowAIVoice] = useState<boolean>(false);
 
     // WebSocket & Audio Refs
     const transcriptionSocketRef = useRef<WebSocket | null>(null);
@@ -31,15 +32,30 @@ const TranscriptionPage: React.FC = () => {
             `${LISTEN_URL}?event_id=${eventId}&room_id=${roomId}&lang=${language}`
         );
 
+        // Set binaryType to receive audio as Blob
+        transcriptionSocketRef.current.binaryType = "arraybuffer";
+
         transcriptionSocketRef.current.onmessage = (event) => {
-            // console.log("Received transcription:", event);
-            const data = JSON.parse(event.data);
-            console.log("TRANSCRIPTION DATA:", data);
-            
-            if (language === 'en') {
-                setTranscription((prev) => prev + " " + data.original);
-            } else {
-                setTranscription((prev) => prev + " " + data.translated);
+            if (typeof event.data === "string") {
+                // Handle transcription text
+                const data = JSON.parse(event.data);
+                console.log("TRANSCRIPTION DATA:", data);
+
+                if (language === 'en') {
+                    setTranscription((prev) => prev + " " + data.original);
+                } else {
+                    setTranscription((prev) => prev + " " + data.translated);
+                }
+            } else if (event.data instanceof ArrayBuffer) {
+                // Handle audio data
+                const audioBlob = new Blob([event.data], { type: "audio/mpeg" });
+                const audioUrl = URL.createObjectURL(audioBlob);
+
+                // Play audio if AI Voice is enabled
+                if (showAIVoice) {
+                    const audio = new Audio(audioUrl);
+                    audio.play();
+                }
             }
         };
 
@@ -50,7 +66,7 @@ const TranscriptionPage: React.FC = () => {
         return () => {
             transcriptionSocketRef.current?.close();
         };
-    }, [language, eventId, roomId]);
+    }, [language, eventId, roomId, showAIVoice]);
 
     // Reset Transcript
     useEffect(() => {
@@ -121,10 +137,27 @@ const TranscriptionPage: React.FC = () => {
             <div style={{ display: "flex", gap: 20, width: "100%" }}>
                 {/* Transcription Section */}
                 <div style={{ width: "100%" }} className="mt-6">
-                    <h2 className="text-lg font-semibold">
-                        {language === "en" ? "English Transcription" : `${language.toUpperCase()} Translation`}:
-                    </h2>
-                    <div style={{ height: "200px", overflowY: "scroll", border: "1px solid black", marginTop: "10px", padding: "10px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", margin: "8px 0" }}>
+                        {/* Label */}
+                        <h2 className="text-lg font-semibold">
+                            {language === "en" ? "English Transcription" : `${language.toUpperCase()} Translation`}:
+                        </h2>
+                        {/*Toggle Switch*/}
+                        <label>
+                            <input
+                                type="checkbox"
+                                checked={showAIVoice}
+                                onChange={() => setShowAIVoice((prev) => !prev)}
+                                style={{ width: 40, height: 20 }}
+                            />
+                            <span>AI Voice</span>
+                            {showAIVoice && (
+                                <span style={{ fontSize: "1.3em", color: "#4ade80" }}>🔊</span>
+                            )}
+                        </label>
+                    </div>
+                    {/* Box */}
+                    <div style={{ height: "500px", overflowY: "scroll", border: "1px solid black", marginTop: "10px", padding: "10px" }}>
                         {transcription
                             .split("\n")
                             .map((line, index) => (
