@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 
 // WebSocket Endpoints (LOCAL)
 const LISTEN_URL = "ws://localhost:9986/ws/transcription_demo/listener";
@@ -25,6 +25,56 @@ const TranscriptionPage: React.FC = () => {
 
     // WebSocket & Audio Refs
     const transcriptionSocketRef = useRef<WebSocket | null>(null);
+    const audioQueueRef = useRef<string[]>([]);
+    const isPlayingRef = useRef<boolean>(false);
+    const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+
+    // Handle audio queue playback
+    const playNextAudio = useCallback(() => {
+        if (!showAIVoice || audioQueueRef.current.length === 0) {
+            isPlayingRef.current = false;
+            return;
+        }
+
+        const audioUrl = audioQueueRef.current.shift();
+        if (!audioUrl) return;
+
+        const audio = new Audio(audioUrl);
+        currentAudioRef.current = audio;
+        isPlayingRef.current = true;
+
+        audio.onended = () => {
+            URL.revokeObjectURL(audioUrl);
+            playNextAudio();
+        };
+
+        audio.onerror = () => {
+            URL.revokeObjectURL(audioUrl);
+            isPlayingRef.current = false;
+        };
+
+        audio.play().catch((err) => {
+            console.warn("Playback error:", err);
+            isPlayingRef.current = false;
+        });
+    }, [showAIVoice]);
+
+    useEffect(() => {
+        if (!showAIVoice) {
+            // Turned OFF — stop audio and clear queue
+            currentAudioRef.current?.pause();
+            currentAudioRef.current = null;
+
+            audioQueueRef.current.forEach(URL.revokeObjectURL);
+            audioQueueRef.current = [];
+            isPlayingRef.current = false;
+        } else {
+            // Turned ON — discard any old queued audio and wait for fresh input
+            audioQueueRef.current.forEach(URL.revokeObjectURL);
+            audioQueueRef.current = [];
+            isPlayingRef.current = false;
+        }
+    }, [showAIVoice]);
 
     // Connect to Transcription WebSocket
     useEffect(() => {
@@ -41,20 +91,17 @@ const TranscriptionPage: React.FC = () => {
                 const data = JSON.parse(event.data);
                 console.log("TRANSCRIPTION DATA:", data);
 
-                if (language === 'en') {
-                    setTranscription((prev) => prev + " " + data.original);
-                } else {
-                    setTranscription((prev) => prev + " " + data.translated);
-                }
+                setTranscription(prev =>
+                    prev + " " + (language === "en" ? data.original : data.translated)
+                );
+
             } else if (event.data instanceof ArrayBuffer) {
-                // Handle audio data
                 const audioBlob = new Blob([event.data], { type: "audio/mpeg" });
                 const audioUrl = URL.createObjectURL(audioBlob);
+                audioQueueRef.current.push(audioUrl);
 
-                // Play audio if AI Voice is enabled
-                if (showAIVoice) {
-                    const audio = new Audio(audioUrl);
-                    audio.play();
+                if (!isPlayingRef.current) {
+                    playNextAudio();
                 }
             }
         };
