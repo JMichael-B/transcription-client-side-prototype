@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 
 // WebSocket Endpoints (LOCAL)
 const LISTEN_URL = "ws://localhost:9986/ws/transcription_demo/listener";
+// const LISTEN_URL = "wss://qurious.ddns.net/qurious-transcription/ws/transcription_demo/listener";
 
 // Required WebSocket Parameters
 const event_id: string = "event-qurious-live-demo";
@@ -15,7 +16,6 @@ const default_language: string = "en";
 
 const TranscriptionPage: React.FC = () => {
     const [transcription, setTranscription] = useState<string>("");
-    const [translatedTranscription, setTranslatedTranscription] = useState<string>("");
 
     // System Parameters
     const [eventId, setEventId] = useState<string>(event_id);
@@ -35,9 +35,12 @@ const TranscriptionPage: React.FC = () => {
             // console.log("Received transcription:", event);
             const data = JSON.parse(event.data);
             console.log("TRANSCRIPTION DATA:", data);
-
-            setTranscription((prev) => prev + " " + data.original);
-            setTranslatedTranscription((prev) => prev + " " + data.translated);
+            
+            if (language === 'en') {
+                setTranscription((prev) => prev + " " + data.original);
+            } else {
+                setTranscription((prev) => prev + " " + data.translated);
+            }
         };
 
         transcriptionSocketRef.current.onclose = () => {
@@ -52,7 +55,6 @@ const TranscriptionPage: React.FC = () => {
     // Reset Transcript
     useEffect(() => {
         setTranscription("");
-        setTranslatedTranscription("");
     }, [eventId, roomId]);
 
     return (
@@ -122,8 +124,8 @@ const TranscriptionPage: React.FC = () => {
                     <h2 className="text-lg font-semibold">
                         {language === "en" ? "English Transcription" : `${language.toUpperCase()} Translation`}:
                     </h2>
-                    <div style={{ height: "200px", overflowY: "scroll", border: "1px solid black", marginTop: "10px",padding: "10px"}}>
-                        {(language === "en" ? transcription : translatedTranscription)
+                    <div style={{ height: "200px", overflowY: "scroll", border: "1px solid black", marginTop: "10px", padding: "10px" }}>
+                        {transcription
                             .split("\n")
                             .map((line, index) => (
                                 <p key={index} className="text-gray-700 whitespace-pre-line">
