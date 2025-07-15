@@ -1,12 +1,10 @@
 import React from "react";
-// import EventPage from "./pages/EventPage";
-import DemoPage from "./pages/DemoPage";
+import TranscriptionPage from "./pages/TranscriptionPage";
 
 const App: React.FC = () => {
   return (
     <div style={{width: "100%"}}>
-      {/* <EventPage /> */}
-      <DemoPage />
+      <TranscriptionPage />
     </div>
   );
 };
